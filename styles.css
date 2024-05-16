@@ -1,22 +1,18 @@
 :root {
     --white: #ffffff;
     --accent: #686b96;
-    --link: #39c6f1;
+    --link: #76AFC2;
+    --link-hover: #39c6f1;
     --bg-blue: #deeaee;
     --nav-width: 180px;
+    --main-padding: 10%;
+    --main-padding-top: 5%;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-}
-
-.box {
-    display: flex;
-    flex-direction: row;
-    background-color: #fcfdff;
-    border: 3px solid #686b96;
 }
 
 body {
@@ -29,6 +25,20 @@ body {
 p {
     color: var(--accent);
 }
+
+a {
+    color: var(--link);
+    text-decoration: none;
+}
+
+a:visited{
+    color: var(--link);
+}
+
+a:hover {
+    color: var(--link-hover);
+}
+
 
 .sidenav {
     background-color: var(--white);
@@ -56,7 +66,13 @@ p {
     display: block;
     padding: 14px;
     opacity: .9;
+    transition: filter 5s;
 }
+
+.sidenav-image:hover {
+    filter: saturate(6);
+}
+
 
 .sidenav-title {
     overflow-wrap: break-word;
@@ -67,6 +83,106 @@ p {
 }
 
 .main {
-    margin-left: var(--nav-width);
-    padding-left: 20px;
-  }
+    margin-left: calc(var(--nav-width) + 20px);
+    padding-top: var(--main-padding-top);
+    padding-left: var(--main-padding);
+    padding-right: var(--main-padding);
+    display: flex;
+    flex-direction: column;
+}
+
+.semi-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#header-image {
+    width: 280px;
+    float: right;
+    align-self: end;
+    margin-right: 1.5rem;
+    margin-bottom: -1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.blogpost {
+    padding: 12px;
+    border-color: var(--accent);
+    border-width: 3px;
+    border-style: solid;
+    background-color: var(--white);
+}
+
+.blog-icon {
+    float: right;
+}
+
+.blog-title {
+    display: none;
+    visibility: hidden;
+}
+
+.blog-date {
+    margin-bottom: 1rem;
+}
+
+.blog-preview {
+    padding: 1rem;
+}
+
+.blog-preview:hover {
+    filter: brightness(80%);
+}
+
+.blog-picture {
+    padding: 1rem;
+    max-width: 150px;
+}
+
+@media(max-width:760px){
+    body {
+        padding: 1rem;
+    }
+
+    .sidenav-background {
+        background-image: none;
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .sidenav {
+        width: 100%;
+        height:auto;
+        position: relative;
+        text-align: center;
+        flex-direction: column;
+        float: none;
+    }
+
+    .sidenav-image {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 55%;
+    }
+
+    .sidenav-title {
+        padding: 10px;
+    }
+
+    .main {
+        margin: auto;
+        padding: 0px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #header-image {
+        width: 180px;
+        margin-bottom: -.62rem;
+        image-rendering: pixelated;
+    }
+}
