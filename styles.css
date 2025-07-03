@@ -118,6 +118,7 @@ a:hover {
 
 .blog-icon {
     float: right;
+    image-rendering: pixelated; 
 }
 
 .blog-title {
