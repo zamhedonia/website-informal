@@ -1,0 +1,692 @@
+<!doctype html>
+<!-- Landmarker Map Maker  © 2025 by zamhedonia is licensed under CC BY 4.0. To view a copy of this license, visit https://creativecommons.org/licenses/by/4.0/ -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="icon" type="image/png" href="/images/favicon.png" />
+
+<title>Landmarker - Map Maker</title>
+<meta name="title" content="Landmarker - Map Maker" />
+<meta name="description" content="Custom Map Designer Maker for Video Games Routing and Map Hobbyists" />
+
+<meta property="twitter:title" content="Landmarker - Map Maker" />
+<meta property="twitter:description" content="Custom Map Designer Maker for Video Games Routing and Map Hobbyists" />
+<meta property="twitter:card" content="https://zamhedonia.neocities.org/images/landmarker.jpg" />
+<meta property="twitter:image" content="https://zamhedonia.neocities.org/images/icon.png" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Landmarker - Map Maker" />
+<meta property="og:description" content="Custom Map Designer Maker for Video Games Routing and Map Hobbyists" />
+<meta property="og:image" content="https://zamhedonia.neocities.org/images/landmarker.jpg" />
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+<style>
+:root {
+  --ui-bg: #080809;
+  --settings-panel: #111117;
+  --panel: #dcdcdc;
+  --muted: #888888;
+  --border: rgba(255,255,255,0.06);
+  --contrast: #3a7bd5;
+  --contrast-active: #66BFFF;
+  --contrast2: #d65a5a;
+  --map: #0c0c0f;
+  --map-border: #141416;
+  --emoji-picker: #16213D;
+}
+
+  html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;background:var(--ui-bg);color:var(--panel)}
+  .app{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:18px;height:100vh;box-sizing:border-box}
+  .panel{background:var(--settings-panel);flex-direction: column;display: flex;padding:14px;border-radius:12px;backdrop-filter:blur(6px);overflow:auto}
+  .file-controls {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  h1{font-size:18px;margin:0 0 10px}
+  label{display:block;font-size:13px;color:var(--muted);margin-top:10px}
+  input[type=text], textarea{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--panel)}
+  .row{display:flex;gap:8px;align-items:center}
+  button{background:var(--contrast);border:none;padding:8px 10px;border-radius:8px;color:#012;padding-top:6px;cursor:pointer}
+  .controls{display:flex;gap:8px;margin-top:10px}
+  .map-wrap{position:relative;overflow:hidden;border-radius:12px;border:4px solid rgba(255,255,255,0.03);background:var(--map)}
+  .map-canvas{width:100%;height:100%;touch-action: none;cursor:grab;position:relative}
+  .map-layer{position:absolute;left:0;top:0;transform-origin:0 0}
+  .map-image {
+    display: block;
+    max-width: none;
+    user-select: none;
+    pointer-events: none !important;
+  }
+  .map-canvas, .map-layer, .map-image, body, html {
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  .marker{position:absolute;transform:translate(-50%,-100%);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;padding:2px}
+  .marker .bubble{background:rgba(0,0,0,0.6);color:white;padding:6px;border-radius:8px;box-shadow:0 6px 18px rgba(2,6,23,0.6);max-width:240px}
+  .marker-symbol{font-size:22px;display:inline-block}
+  .panel .emoji-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .emoji-item{padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);cursor:pointer}
+  .emoji-item.selected{outline:2px solid var(--contrast)}
+  .emoji-item.picker-btn {
+    background: var(--emoji-picker);
+  }
+  .small{font-size:12px;color:var(--muted)}
+  .top-controls{display:flex;gap:8px;align-items:center}
+  .flex{flex:1}
+  .footer{margin-top:12px;display:flex;gap:8px}
+  .copy-ok{background:#10b981}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+.marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(var(--marker-scale,1));
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: transform 0.05s ease;
+}
+
+.marker-symbol-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-symbol {
+  font-size: 24px;
+  pointer-events: none;
+}
+
+.marker .bubble {
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15,23,42,0.95);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  min-width: 160px;
+  max-width: 240px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 15;
+}
+
+.marker:hover .bubble,
+.marker.active .bubble {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.marker:hover {
+  transform: translate(-50%, -50%) scale(calc(var(--marker-scale,1) * 1.25));
+  z-index: 20;
+}
+
+  .zoom-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 50;
+  }
+
+  .zoom-controls button {
+    background: rgba(0,0,0,0.3);
+    border: none;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+  }
+
+  .zoom-controls button:hover {
+    background: rgba(0,0,0,0.5);
+  }
+
+  emoji-picker {
+    --background: #112;
+    --border-color: #222;
+    --button-hover-background: #114;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Map Maker</h1>
+    <div class="small">Map image URL:</div>
+    <div class="row" style="margin-top:6px">
+      <input id="mapUrl" type="text" placeholder="https://.../map.png" />
+      <button id="loadMapBtn">Load</button>
+    </div>
+
+    <label>Markers</label>
+    <div class="small">Choose emoji or symbol URL:</div>
+    <div class="emoji-list" id="emojiList"></div>
+    <input id="symbolImageUrl" type="text" placeholder="Symbol URL (optional)" style="margin-top:8px"/>
+    <div class="row" style="margin-top:8px">
+      <button id="addMarkerMode">Add Marker: Off</button>
+      <button id="removeMarkersBtn" style="background: var(--contrast2);">Remove Marker</button>
+    </div>
+
+    <!-- Dialog container -->
+    <div id="removeDialog" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:100;">
+      <div style="background:#0f172a; padding:16px; border-radius:12px; max-width:400px; width:90%; color:white;">
+        <h3>Remove Markers</h3>
+        <div id="markerList" style="max-height:300px; overflow:auto; margin-top:8px;"></div>
+        <div style="text-align:right; margin-top:12px;">
+          <button id="closeRemoveDialog">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <label>Title & Description</label>
+    <input id="markerTitle" type="text" placeholder="Title" />
+    <textarea id="markerDesc" rows="3" placeholder="Description"></textarea>
+
+    <div class="footer">
+      <button id="clearBtn" style="background: var(--contrast2);">Reset Map</button>
+    </div>
+    <div class="file-controls">
+      <label>Export / Import</label>
+      <div style="margin-top:8px">
+        <button id="exportFileBtn">Export to File</button>
+      </div>
+      <div style="margin-top:8px">
+        <label class="small" for="fileInput">Import from file:</label>
+        <input id="fileInput" type="file" accept=".txt,application/json,text/plain" />
+        <span id="fileImportHint" class="small" style="margin-left:8px;color:var(--muted)"></span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="map-wrap" style="min-height:420px">
+    <div class="zoom-controls">
+      <button id="zoomIn">+</button>
+      <button id="zoomOut">−</button>
+    </div>
+    <div class="transparency-control" style="position:absolute; bottom:12px; right:12px; z-index:50; display:flex; align-items:center; gap:6px; background: rgba(0,0,0,0.3); padding:6px 8px; border-radius:8px;">
+      <input id="opacitySlider" type="range" min="0" max="100" value="100" style="width:130px;">
+    </div>
+    <div id="mapCanvas" class="map-canvas">
+      <div id="mapLayer" class="map-layer">
+        <img id="mapImage" class="map-image" src="" alt="No Map image defined"/>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let lastExportTime = null;
+let markersChanged = false;
+(function(){
+  const state = {
+    mapUrl: '',
+    scale: 1,
+    minScale: 0.5,
+    maxScale: 6,
+    translate: {x:0,y:0},
+    dragging: false,
+    lastMouse: {x:0,y:0},
+    addMode: false,
+    selectedEmoji: '📍',
+    markerImageUrl: '',
+    markers: []
+  };
+
+  const mapUrlInput = document.getElementById('mapUrl');
+  const loadMapBtn = document.getElementById('loadMapBtn');
+  const mapCanvas = document.getElementById('mapCanvas');
+  const mapLayer = document.getElementById('mapLayer');
+  const mapImage = document.getElementById('mapImage');
+  const zoomInBtn = document.getElementById('zoomIn');
+  const zoomOutBtn = document.getElementById('zoomOut');
+  const addMarkerModeBtn = document.getElementById('addMarkerMode');
+  const emojiList = document.getElementById('emojiList');
+  const symbolImageUrlInput = document.getElementById('symbolImageUrl');
+  const markerTitleInput = document.getElementById('markerTitle');
+  const markerDescInput = document.getElementById('markerDesc');
+  const clearBtn = document.getElementById('clearBtn');
+
+  const emojis = ['📍','⭐','🚩','⚠️','🔑','🔒','❌','🗝️','📜','🏴‍☠️','🏹','🗡️','💎','🍄','⛏️'];
+
+  function applyTransform() {
+    mapLayer.style.transform = `translate(${state.translate.x}px, ${state.translate.y}px) scale(${state.scale})`;
+    updateMarkerScale();
+  }
+
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function setScale(newScale, center){
+    const prev = state.scale;
+    newScale = clamp(newScale, state.minScale, state.maxScale);
+    if(newScale === prev) return;
+    if(center){
+      const rect = mapCanvas.getBoundingClientRect();
+      const cx = center.x - rect.left;
+      const cy = center.y - rect.top;
+      const mapXBefore = (cx - state.translate.x)/prev;
+      const mapYBefore = (cy - state.translate.y)/prev;
+      const mapXAfter = mapXBefore * newScale;
+      const mapYAfter = mapYBefore * newScale;
+      state.translate.x += (mapXBefore*prev - mapXAfter);
+      state.translate.y += (mapYBefore*prev - mapYAfter);
+    }
+    state.scale = newScale;
+    applyTransform();
+  }
+
+  function setAddMode(on){
+    state.addMode = on;
+    addMarkerModeBtn.textContent = 'Add Marker: ' + (on ? 'On' : 'Off');
+    addMarkerModeBtn.style.background = on ? 'var(--contrast-active)' : '';
+    mapCanvas.style.cursor = on ? 'crosshair' : 'grab';
+  }
+
+  function renderMarkers() {
+    mapLayer.querySelectorAll('.marker').forEach(n => n.remove());
+
+    state.markers.forEach((m, idx) => {
+      const el = document.createElement('div');
+      el.className = 'marker';
+      el.style.left = (m.x * 100) + '%';
+      el.style.top = (m.y * 100) + '%';
+      el.dataset.index = idx;
+      el.style.setProperty('--marker-scale', (1/state.scale).toString());
+
+      if (m.symbolType === 'image') {
+        const img = document.createElement('img');
+        img.src = m.symbol;
+        img.style.width = '28px';
+        img.style.height = '28px';
+        img.style.objectFit = 'contain';
+        el.appendChild(img);
+      } else {
+        const span = document.createElement('div');
+        span.className = 'marker-symbol';
+        span.textContent = m.symbol;
+        span.style.fontSize = '24px';
+        el.appendChild(span);
+      }
+
+      // Tooltip
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = `<strong>${escapeHtml(m.title || 'Marked Location')}</strong><br>${escapeHtml(m.desc || '')}`;
+      el.appendChild(bubble);
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.marker')) {
+            mapLayer.querySelectorAll('.marker.active').forEach(a => a.classList.remove('active'));
+        }
+      });
+
+
+      mapLayer.appendChild(el);
+    });
+  }
+  function updateMarkerScale() {
+    const scale = 1 / state.scale;
+    mapLayer.querySelectorAll('.marker').forEach(el => {
+      el.style.setProperty('--marker-scale', scale);
+    });
+  }
+
+
+  document.addEventListener('click', () => {
+    mapLayer.querySelectorAll('.marker.active').forEach(a => a.classList.remove('active'));
+  });
+
+
+
+
+  function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
+
+  loadMapBtn.addEventListener('click', ()=>{
+    const url = mapUrlInput.value.trim();
+    if(!url) return alert('Insert Map Image URL.');
+    state.mapUrl = url; mapImage.src = url;
+    mapImage.onload = ()=>{
+      state.scale = 1; state.translate = {x:0,y:0}; applyTransform();
+    };
+  });
+
+  zoomInBtn.addEventListener('click', ()=> setScale(state.scale * 1.25, {x: mapCanvas.clientWidth/2 + mapCanvas.getBoundingClientRect().left, y: mapCanvas.clientHeight/2 + mapCanvas.getBoundingClientRect().top}));
+  zoomOutBtn.addEventListener('click', ()=> setScale(state.scale / 1.25, {x: mapCanvas.clientWidth/2 + mapCanvas.getBoundingClientRect().left, y: mapCanvas.clientHeight/2 + mapCanvas.getBoundingClientRect().top}));
+
+  mapCanvas.addEventListener('wheel', (e)=>{
+    e.preventDefault();
+    const delta = -e.deltaY;
+    const factor = delta > 0 ? 1.12 : 1/1.12;
+    setScale(state.scale * factor, {x:e.clientX, y:e.clientY});
+  }, {passive:false});
+
+  const removeMarkersBtn = document.getElementById('removeMarkersBtn');
+  const removeDialog = document.getElementById('removeDialog');
+  const markerList = document.getElementById('markerList');
+  const closeRemoveDialog = document.getElementById('closeRemoveDialog');
+
+  function renderRemoveDialog() {
+    markerList.innerHTML = '';
+    if (state.markers.length === 0) {
+      markerList.innerHTML = '<div style="padding:6px;">No markers</div>';
+      return;
+    }
+    state.markers.forEach((m, idx) => {
+      const item = document.createElement('div');
+      item.style.display = 'flex';
+      item.style.justifyContent = 'space-between';
+      item.style.alignItems = 'center';
+      item.style.padding = '4px 0';
+      item.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+
+      const info = document.createElement('div');
+      info.innerHTML = `<span style="margin-right:6px;">${m.symbol}</span>
+        <strong>${escapeHtml(m.title || '(no title)')}</strong>
+        <span style="font-size:12px; color:#aaa;">[${(m.x*100).toFixed(1)}%, ${(m.y*100).toFixed(1)}%]</span>`;
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'X';
+      delBtn.style.background = '#ef4444';
+      delBtn.style.color = 'white';
+      delBtn.style.border = 'none';
+      delBtn.style.borderRadius = '6px';
+      delBtn.style.padding = '2px 6px';
+      delBtn.style.marginRight = '16px';
+      delBtn.style.cursor = 'pointer';
+
+      delBtn.addEventListener('click', () => {
+        state.markers.splice(idx, 1);
+        renderMarkers();
+        renderRemoveDialog();
+        markersChanged = true;
+      });
+
+      item.appendChild(info);
+      item.appendChild(delBtn);
+      markerList.appendChild(item);
+    });
+  }
+
+  // Open dialog
+  removeMarkersBtn.addEventListener('click', () => {
+    renderRemoveDialog();
+    removeDialog.style.display = 'flex';
+  });
+
+  // Close dialog
+  closeRemoveDialog.addEventListener('click', () => {
+    removeDialog.style.display = 'none';
+  });
+
+
+  // ---- Drag + Marker fix ----
+  let moved = false;
+  mapCanvas.addEventListener('pointerdown', (e)=>{
+    if(state.addMode){
+      moved = false;
+      mapCanvas.setPointerCapture(e.pointerId);
+      state.lastMouse.x = e.clientX;
+      state.lastMouse.y = e.clientY;
+      return;
+    }
+    mapCanvas.setPointerCapture(e.pointerId);
+    state.dragging = true;
+    state.lastMouse.x = e.clientX;
+    state.lastMouse.y = e.clientY;
+    mapCanvas.style.cursor='grabbing';
+  });
+  mapCanvas.addEventListener('pointermove', (e)=>{
+    if(state.addMode){
+      const dx = Math.abs(e.clientX - state.lastMouse.x);
+      const dy = Math.abs(e.clientY - state.lastMouse.y);
+      if(dx>2 || dy>2) moved = true;
+      return;
+    }
+    if(!state.dragging) return;
+    const dx = e.clientX - state.lastMouse.x;
+    const dy = e.clientY - state.lastMouse.y;
+    state.translate.x += dx;
+    state.translate.y += dy;
+    applyTransform();
+    state.lastMouse.x = e.clientX;
+    state.lastMouse.y = e.clientY;
+  });
+  mapCanvas.addEventListener('pointerup', (e)=>{
+    if(state.addMode && !moved){
+      const rect = mapCanvas.getBoundingClientRect();
+      const imgRect = mapImage.getBoundingClientRect();
+
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      const mapX = (cx - state.translate.x) / state.scale;
+      const mapY = (cy - state.translate.y) / state.scale;
+
+      const imgW = mapImage.naturalWidth;
+      const imgH = mapImage.naturalHeight;
+      const layerW = mapImage.width;
+      const layerH = mapImage.height;
+
+      const xPerc = mapX / layerW;
+      const yPerc = mapY / layerH;
+
+      const symbolType = (symbolImageUrlInput.value.trim()) ? 'image' : 'emoji';
+      const symbol = symbolType === 'image' ? symbolImageUrlInput.value.trim() : state.selectedEmoji;
+      const title = markerTitleInput.value.trim();
+      const desc = markerDescInput.value.trim();
+
+      const m = {x: xPerc, y: yPerc, symbolType, symbol, title, desc};
+      state.markers.push(m);
+      markersChanged = true;
+      renderMarkers();
+    }
+
+    state.dragging = false;
+    mapCanvas.style.cursor = state.addMode ? 'crosshair' : 'grab';
+  });
+
+  mapCanvas.addEventListener('pointercancel', ()=>{
+    state.dragging=false;
+    mapCanvas.style.cursor = state.addMode ? 'crosshair' : 'grab';
+  });
+
+  // ---- UI setup ----
+  emojis.forEach(e =>{
+    const btn = document.createElement('div');
+    btn.className='emoji-item';
+    btn.textContent = e;
+    btn.addEventListener('click', ()=>{
+      state.selectedEmoji = e;
+      document.querySelectorAll('.emoji-item').forEach(n=>n.classList.remove('selected'));
+      btn.classList.add('selected');
+      symbolImageUrlInput.value = '';
+      setAddMode(true);
+    });
+    emojiList.appendChild(btn);
+  });
+  emojiList.querySelector('.emoji-item').classList.add('selected');
+
+  const pickerBtn = document.createElement('div');
+  pickerBtn.className = 'emoji-item picker-btn';
+  pickerBtn.textContent = '😀';
+  emojiList.appendChild(pickerBtn);
+
+  pickerBtn.addEventListener('click', async () => {
+    const picker = document.createElement('emoji-picker');
+    picker.style.position = 'absolute';
+    picker.style.zIndex = '1000';
+    picker.style.bottom = '50px';
+    picker.style.left = '10px';
+    document.body.appendChild(picker);
+
+    const closePicker = () => {
+      picker.remove();
+      document.removeEventListener('click', outsideClick);
+    };
+
+    const outsideClick = (e) => {
+      if (!picker.contains(e.target) && e.target !== pickerBtn) closePicker();
+    };
+
+    document.addEventListener('click', outsideClick);
+
+    picker.addEventListener('emoji-click', (event) => {
+      const emoji = event.detail.unicode;
+      state.selectedEmoji = emoji;
+      symbolImageUrlInput.value = '';
+      document.querySelectorAll('.emoji-item').forEach(n => n.classList.remove('selected'));
+      pickerBtn.classList.add('selected');
+      closePicker();
+      setAddMode(true);
+    });
+  });
+
+
+  function serialize() {
+    const data = {
+      mapUrl: state.mapUrl,
+      scale: state.scale,
+      translate: state.translate,
+      markers: state.markers
+    };
+    return JSON.stringify(data, null, 2);
+  }
+
+  function deserialize(str) {
+    try {
+      return JSON.parse(str);
+    } catch (err) {
+      try {
+        // Try Base64 legacy format
+        const json = decodeURIComponent(escape(atob(str)));
+        return JSON.parse(json);
+      } catch (e) {
+        return null;
+      }
+    }
+  }
+
+  clearBtn.addEventListener('click', ()=>{
+    if(!confirm('Create new map? All progress will be deleted.')) return;
+    state.mapUrl=''; mapImage.src='';
+    mapUrlInput.value='';
+    state.scale=1; state.translate={x:0,y:0};
+    state.markers=[];
+    applyTransform(); renderMarkers(); exportText.value='';
+  });
+  document.addEventListener('click', () => {
+    mapLayer.querySelectorAll('.marker.active').forEach(a => a.classList.remove('active'));
+  });
+
+
+  const fileInput = document.getElementById('fileInput');
+  const fileImportHint = document.getElementById('fileImportHint');
+
+  fileInput.addEventListener('change', (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+
+    fileImportHint.textContent = 'Loading…';
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      fileImportHint.textContent = 'Failed to read file';
+      setTimeout(() => (fileImportHint.textContent = ''), 2000);
+    };
+
+    reader.onload = () => {
+      try {
+        const text = String(reader.result).trim();
+        const data = deserialize(text);
+
+        if (!data) throw new Error('Unrecognized format');
+
+        // Apply imported data
+        state.mapUrl = data.mapUrl || '';
+        mapImage.src = state.mapUrl;
+        state.scale = data.scale || 1;
+        state.translate = data.translate || { x: 0, y: 0 };
+        state.markers = Array.isArray(data.markers) ? data.markers : [];
+
+        applyTransform();
+        renderMarkers();
+
+        fileImportHint.textContent = 'Imported ✓';
+      } catch (err) {
+        fileImportHint.textContent = err.message;
+      } finally {
+        setTimeout(() => (fileImportHint.textContent = ''), 2000);
+        fileInput.value = '';
+      }
+    };
+
+    reader.readAsText(file, 'utf-8');
+  });
+
+
+  const exportFileBtn = document.getElementById('exportFileBtn');
+
+  exportFileBtn.addEventListener('click', () => {
+    const dataStr = serialize(); // use your readable JSON serialize function
+    const blob = new Blob([dataStr], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'map-data.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    lastExportTime = Date.now();
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    if (!markersChanged) return;
+
+    const minutesAgo = lastExportTime ? Math.floor((Date.now() - lastExportTime) / 60000) : null;
+
+    if (minutesAgo === null || minutesAgo >= 1) {
+      const message = minutesAgo === null
+        ? `Not exported map data will be lost. No export has been made yet.`
+        : `Not exported map data will be lost. Last export ${minutesAgo} minute(s) ago.`;
+      e.preventDefault();
+      e.returnValue = message;
+      return message;
+    }
+  });
+
+  const opacitySlider = document.getElementById('opacitySlider');
+
+  opacitySlider.addEventListener('input', (e) => {
+    const value = e.target.value;
+    mapImage.style.opacity = value / 100;
+  });
+
+  addMarkerModeBtn.addEventListener('click', ()=> setAddMode(!state.addMode));
+
+  applyTransform();
+  renderMarkers();
+})();
+</script>
+
+</body>
+</html>
