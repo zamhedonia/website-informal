@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ascii Artist</title>
+
+    <style>
+      :root {
+        --cell-width: 10px;
+        --cell-height: 18px;
+        --font-size: 14px;
+        --bg-color: #111;
+        --font-color: #ddd;
+        --font-family: "MesloLGS NF", "MesloLGS", "JetBrains Mono", monospace;
+      }
+
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Martian+Mono:wght@100..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
+
+      body {
+        font-family: var(--font-family);
+        font-size: 13px;
+        background: var(--bg-color);
+        color: var(--font-color);
+        padding: 10px;
+      }
+
+      h1 {
+        margin: 0px 0px 5px 0px;
+      }
+
+      button {
+        margin: 2px;
+      }
+
+      #editor-wrapper {
+        position: relative;
+        display: inline-block;
+        border: 1px solid #444;
+      }
+
+      #bg-image {
+        position: absolute;
+        inset: 0;
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .semi-header {
+        position: absolute;
+        top: 0;
+        right: 0;
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      #header-image {
+        width: 55px;
+        transform: translate(20%, -80%);
+        image-rendering: pixelated;
+      }
+
+      #grid {
+        position: relative;
+        display: grid;
+      }
+
+      .cell {
+        width: var(--cell-width);
+        height: var(--cell-height);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: center;
+        line-height: var(--cell-height);
+        font-size: var(--font-size);
+        font-family: var(--font-family);
+        caret-color: transparent;
+        outline: none;
+      }
+
+      .cell:focus {
+        background: rgba(255, 255, 255, 0.15);
+      }
+    </style>
+  </head>
+  <!-- Well, technically this is not an *Ascii* art program per se. We support really weird unicode characters. Anyways, stop snooping around! Wahooo! -->
+  <body>
+    <div>
+      <h1>Ascii Artist</h1>
+      <strong>Background image</strong>
+      <input
+        type="file"
+        id="imageInput"
+        accept="image/*"
+        style="width: 200px"
+      />
+      <strong>Import Ascii Art</strong>
+      <input
+        type="file"
+        id="textInput"
+        accept=".txt"
+        style="width: 200px"
+      /><br />
+    </div>
+
+    <div>
+      <button id="undoBtn" onclick="undo()">Undo</button>
+      <button id="redoBtn" onclick="redo()">Redo</button>
+      <strong>Background:</strong>
+      <button onclick="moveBg(0, -2)">↑</button>
+      <button onclick="moveBg(0, 2)">↓</button>
+      <button onclick="moveBg(-2, 0)">←</button>
+      <button onclick="moveBg(2, 0)">→</button>
+      <button onclick="scaleBg(1.05)">+</button>
+      <button onclick="scaleBg(0.95)">−</button>
+    </div>
+
+    <br />
+
+    <div id="editor-wrapper">
+      <div class="semi-header">
+        <img id="header-image" src="../images/sitting-ascii.png" alt="" />
+      </div>
+      <div id="bg-image"></div>
+      <div id="grid"></div>
+    </div>
+
+    <div style="margin-top: 20px">
+      Rows <input id="rows" type="number" value="30" style="width: 60px" /> Cols
+      <input id="cols" type="number" value="80" style="width: 60px" />
+      <button id="rebuild">Rebuild Grid</button>
+      <button onclick="exportText()">Export TXT</button><br />
+    </div>
+
+    <script>
+      let hasUnsavedChanges = false;
+
+      const grid = document.getElementById("grid");
+      const bg = document.getElementById("bg-image");
+
+      let undoStack = [];
+      let redoStack = [];
+      const MAX_HISTORY = 100;
+
+      let bgX = 0;
+      let bgY = 0;
+      let bgScale = 1;
+
+      const undoBtn = document.getElementById("undoBtn");
+      const redoBtn = document.getElementById("redoBtn");
+
+      function updateUndoRedoButtons() {
+        undoBtn.disabled = undoStack.length <= 1;
+        redoBtn.disabled = redoStack.length === 0;
+      }
+
+      function snapshot() {
+        return [...grid.children].map((c) => c.textContent || " ");
+      }
+
+      function saveState() {
+        undoStack.push(snapshot());
+        if (undoStack.length > MAX_HISTORY) undoStack.shift();
+        redoStack = [];
+        hasUnsavedChanges = true;
+        updateUndoRedoButtons();
+      }
+
+      function restoreState(state) {
+        grid.childNodes.forEach((c, i) => (c.textContent = state[i] || " "));
+      }
+
+      function undo() {
+        if (undoStack.length <= 1) return;
+        redoStack.push(undoStack.pop());
+        restoreState(undoStack[undoStack.length - 1]);
+        updateUndoRedoButtons();
+      }
+
+      function redo() {
+        if (redoStack.length === 0) return;
+        const state = redoStack.pop();
+        undoStack.push(state);
+        restoreState(state);
+        updateUndoRedoButtons();
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "z") undo();
+        if (e.ctrlKey && e.key === "y") redo();
+      });
+
+      function buildGrid(confirmReset = false) {
+        if (
+          confirmReset &&
+          !confirm(
+            "Are you sure you want to rebuild the grid?\nAll progress will be deleted.",
+          )
+        )
+          return;
+
+        const rows = +rowsInput.value;
+        const cols = +colsInput.value;
+        const cw = 10,
+          ch = 18;
+
+        grid.innerHTML = "";
+        grid.style.gridTemplateRows = `repeat(${rows}, ${ch}px)`;
+        grid.style.gridTemplateColumns = `repeat(${cols}, ${cw}px)`;
+        grid.style.width = cols * cw + "px";
+        grid.style.height = rows * ch + "px";
+
+        bg.style.width = grid.style.width;
+        bg.style.height = grid.style.height;
+
+        undoStack = [];
+        redoStack = [];
+
+        undoStack.push(snapshot());
+        updateUndoRedoButtons();
+
+        for (let i = 0; i < rows * cols; i++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.contentEditable = true;
+          cell.dataset.index = i;
+
+          cell.addEventListener("input", () => {
+            cell.textContent = cell.textContent.slice(0, 1);
+            saveState();
+          });
+
+          cell.addEventListener("keydown", (e) => {
+            const idx = +cell.dataset.index;
+            let t;
+            if (e.key === "ArrowLeft") t = idx - 1;
+            if (e.key === "ArrowRight") t = idx + 1;
+            if (e.key === "ArrowUp") t = idx - cols;
+            if (e.key === "ArrowDown") t = idx + cols;
+            if (t !== undefined) {
+              e.preventDefault();
+              grid.children[t]?.focus();
+            }
+          });
+
+          grid.appendChild(cell);
+        }
+
+        grid.firstChild?.focus();
+        updateUndoRedoButtons();
+      }
+
+      window.addEventListener("beforeunload", (e) => {
+        if (!hasUnsavedChanges) return;
+
+        e.preventDefault();
+        e.returnValue = "";
+      });
+
+      function exportText() {
+        const cols = +colsInput.value;
+        let out = "";
+        [...grid.children].forEach((c, i) => {
+          out += c.textContent || " ";
+          if ((i + 1) % cols === 0) out += "\n";
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([out]));
+        a.download = "ascii.txt";
+        a.click();
+      }
+
+      textInput.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split("\n");
+          const cols = +colsInput.value;
+          grid.childNodes.forEach((c, i) => {
+            const r = Math.floor(i / cols);
+            const col = i % cols;
+            c.textContent = lines[r]?.[col] || " ";
+          });
+          saveState();
+        };
+        reader.readAsText(e.target.files[0]);
+      };
+
+      imageInput.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          bg.style.backgroundImage = `url(${reader.result})`;
+          bgX = 0;
+          bgY = 0;
+          bgScale = 1;
+          updateBg();
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      };
+
+      function moveBg(dx, dy) {
+        bgX += dx;
+        bgY += dy;
+        updateBg();
+      }
+
+      function scaleBg(f) {
+        bgScale *= f;
+        updateBg();
+      }
+
+      function updateBg() {
+        bg.style.backgroundPosition = `${50 + bgX}px ${50 + bgY}px`;
+        bg.style.backgroundSize = `${bgScale * 100}%`;
+      }
+
+      const rowsInput = document.getElementById("rows");
+      const colsInput = document.getElementById("cols");
+      document.getElementById("rebuild").onclick = () => buildGrid(true);
+
+      buildGrid();
+    </script>
+  </body>
+  <!-- Ascii Artist © 2026 by zamhedonia is licensed under CC BY 4.0. To view a copy of this license, visit https://creativecommons.org/licenses/by/4.0/ -->
+</html>
